@@ -9,7 +9,7 @@
     # CompatiblePSEditions = @()
 
     # ID used to uniquely identify this module
-    GUID = 'C54300D-A0C2-4C54-B0A4-593F504C5259'
+    GUID = '3C54300D-A0C2-4C54-B0A4-593F504C5259'
 
     # Author of this module
     Author = 'Claudio Spizzi'
