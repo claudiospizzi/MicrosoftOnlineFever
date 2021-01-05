@@ -93,7 +93,7 @@
             Tags = @('PSModule', 'MicrosoftOnline', 'Microsoft365', 'Office365')
 
             # A URL to the license for this module.
-            LicenseUri = 'https://raw.githubusercontent.com/claudiospizzi/MicrosoftOnlineFever/master/LICENSE'
+            LicenseUri = 'https://raw.githubusercontent.com/claudiospizzi/MicrosoftOnlineFever/main/LICENSE'
 
             # A URL to the main website for this project.
             ProjectUri = 'https://github.com/claudiospizzi/MicrosoftOnlineFever'
@@ -102,7 +102,7 @@
             # IconUri = ''
 
             # ReleaseNotes of this module
-            ReleaseNotes = 'https://github.com/claudiospizzi/MicrosoftOnlineFever/blob/master/CHANGELOG.md'
+            ReleaseNotes = 'https://github.com/claudiospizzi/MicrosoftOnlineFever/blob/main/CHANGELOG.md'
 
         } # End of PSData hashtable
 

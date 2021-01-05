@@ -1,6 +1,6 @@
 [![PowerShell Gallery - MicrosoftOnlineFever](https://img.shields.io/badge/PowerShell_Gallery-MicrosoftOnlineFever-0072C6.svg)](https://www.powershellgallery.com/packages/MicrosoftOnlineFever)
 [![GitHub - Release](https://img.shields.io/github/release/claudiospizzi/MicrosoftOnlineFever.svg)](https://github.com/claudiospizzi/MicrosoftOnlineFever/releases)
-[![AppVeyor - master](https://img.shields.io/appveyor/ci/claudiospizzi/MicrosoftOnlineFever/master.svg)](https://ci.appveyor.com/project/claudiospizzi/MicrosoftOnlineFever/branch/master)
+[![AppVeyor - main](https://img.shields.io/appveyor/ci/claudiospizzi/MicrosoftOnlineFever/main.svg)](https://ci.appveyor.com/project/claudiospizzi/MicrosoftOnlineFever/branch/main)
 
 # MicrosoftOnlineFever PowerShell Module
 
