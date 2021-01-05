@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "PowerShell Debug Script",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${workspaceFolder}\\.debug.temp.ps1",
+            "cwd": "${workspaceFolder}",
+            "createTemporaryIntegratedConsole": true
+        }
+    ]
+}
