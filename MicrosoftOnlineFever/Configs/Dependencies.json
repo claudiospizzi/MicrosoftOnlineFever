@@ -1,0 +1,22 @@
+{
+    "Modules": [
+        {
+            "Name": "AzureAD",
+            "Version": "2.0.2.128"
+        },
+        {
+            "Name": "MSOnline",
+            "Version": "1.1.183.57"
+        }
+    ],
+    "PreviewModules": [
+        {
+            "Name": "AzureADPreview",
+            "Version": "2.0.2.129"
+        },
+        {
+            "Name": "MSOnline",
+            "Version": "1.1.183.57"
+        }
+    ]
+}

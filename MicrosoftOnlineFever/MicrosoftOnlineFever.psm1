@@ -29,3 +29,7 @@ Split-Path -Path $PSCommandPath |
 $Script:PSModulePath    = Split-Path -Path $PSCommandPath
 $Script:PSModuleName    = Split-Path -Path $PSCommandPath -Leaf | ForEach-Object { $_.Split('.')[0] }
 $Script:PSModuleVersion = (Import-PowerShellDataFile -Path "$Script:PSModulePath\$Script:PSModuleName.psd1")['ModuleVersion']
+
+# Define module behaviour
+$ErrorActionPreference = 'Stop'
+Set-StrictMode -Version 'Latest'
