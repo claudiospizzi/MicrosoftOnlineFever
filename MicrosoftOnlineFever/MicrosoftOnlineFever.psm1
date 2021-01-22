@@ -33,3 +33,15 @@ $Script:PSModuleVersion = (Import-PowerShellDataFile -Path "$Script:PSModulePath
 # Define module behaviour
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version 'Latest'
+
+# Module configuration files in the user app data directory
+$Script:MicrosoftOnlineFeverConfigPath = '{0}\PowerShell\MicrosoftOnlineFever' -f $Env:AppData
+$Script:MicrosoftOnlineFeverTenantPath = '{0}\tenants.json' -f $Script:MicrosoftOnlineFeverConfigPath
+if (-not (Test-Path -Path $Script:MicrosoftOnlineFeverConfigPath))
+{
+    New-Item -Path $Script:MicrosoftOnlineFeverConfigPath -ItemType 'Directory' | Out-Null
+}
+if (-not (Test-Path -Path $Script:MicrosoftOnlineFeverTenantPath))
+{
+    ConvertTo-Json -InputObject @() | Set-Content -Path $Script:MicrosoftOnlineFeverTenantPath -Encoding 'UTF8' -Force
+}

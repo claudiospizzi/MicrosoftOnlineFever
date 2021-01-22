@@ -1,4 +1,22 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <Types>
 
+  <Type>
+    <Name>MicrosoftOnlineFever.Tenant</Name>
+    <Members>
+      <ScriptProperty>
+        <Name>TenantName</Name>
+        <GetScriptBlock>$this.TenantDomain.Split('.')[0]</GetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
+        <Name>ConnectionString</Name>
+        <GetScriptBlock>'{0}:{1}:{2}:{3}:{4}:{5}:{6}:{7}' -f $this.TenantDomain, $this.TenantId, $this.ApplicationId, $this.ClientId, ([System.Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes((Unprotect-SecureString -SecureString $this.ClientSecret)))), $this.CertificateThumbprint, (Unprotect-SecureString -SecureString $this.CertificateSecret), $this.CertificatePfx</GetScriptBlock>
+      </ScriptProperty>
+      <ScriptMethod>
+        <Name>ToString</Name>
+        <Script>$this.ConnectionString</Script>
+      </ScriptMethod>
+    </Members>
+  </Type>
+
 </Types>

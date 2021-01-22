@@ -13,7 +13,7 @@ function Import-MicrosoftOnlineTenant
         $Path,
 
         # The tenant name.
-        [Parameter(Mandatory = $false, Position = 0)]
+        [Parameter(Mandatory = $false)]
         [AllowEmptyCollection()]
         [SupportsWildcards()]
         [System.String[]]
@@ -37,6 +37,8 @@ function Import-MicrosoftOnlineTenant
                 TenantDomain          = $object.TenantDomain
                 TenantId              = $object.TenantId
                 ApplicationId         = $object.ApplicationId
+                ClientId              = $object.ClientId
+                ClientSecret          = $object.ClientSecret | ConvertTo-SecureString
                 CertificateThumbprint = $object.CertificateThumbprint
                 CertificateSecret     = $object.CertificateSecret | ConvertTo-SecureString
                 CertificatePfx        = $object.CertificatePfx
@@ -49,12 +51,15 @@ function Import-MicrosoftOnlineTenant
     }
 
     # Filter the tenants if the Name parameter is specified.
-    if ($PSBoundParameters.ContainsKey('Name') -and $Name.Count -gt 0)
+    if ($PSBoundParameters.ContainsKey('Name') -and $Name -and $Name.Count -gt 0)
     {
-        $tenants = $tenants | Where-Object { $tenantName = $_; $Name | ForEach-Object { $tenantName -like $_ } }
+        $tenants = $tenants | Where-Object { $tenantName = $_.Name; $Name | Where-Object { $tenantName -like $_ } }
     }
 
     $tenants = $tenants | Sort-Object -Property 'Name'
 
-    Write-Output $tenants
+    if ($null -ne $tenants)
+    {
+        Write-Output $tenants
+    }
 }

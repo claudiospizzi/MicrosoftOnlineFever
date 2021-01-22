@@ -1,17 +1,20 @@
 <#
     .SYNOPSIS
-        Register an application for PowerShell automation in Azure AD.
+        Register an application with key credentials and permissions for
+        PowerShell automation in Azure AD.
 
     .DESCRIPTION
-        This command will register an application in the Azure AD used to
+        This command will register an application in the Azure AD used set
         perform PowerShell automation tasks. It will also create a local
         certificate and add it as authentication key to the application.
+        Finally the permissions in the tenant is applied to the service
+        principal
 
     .INPUTS
         None.
 
     .OUTPUTS
-        System.String. Connection string to the application.
+        MicrosoftOnlineFever.Tenant. Tenant for the created application.
 
     .EXAMPLE
         PS C:\> Register-MicrosoftOnlineAutomation
@@ -26,7 +29,9 @@ function Register-MicrosoftOnlineAutomation
     [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'High')]
     param
     (
-        # Credentails to connect to the Azure AD.
+        # Credential to connect to the Azure AD. Only usable if two factor is
+        # not enabled. If the credential is not specified, a UI popup will
+        # prompt for the Microsoft Online login.
         [Parameter(Mandatory = $false)]
         [System.Management.Automation.PSCredential]
         $Credential,
@@ -44,8 +49,18 @@ function Register-MicrosoftOnlineAutomation
 
         # Directory role used by the Azure AD application.
         [Parameter(Mandatory = $false)]
+        [System.String[]]
+        $ApplicationDirectoryRole = @('Company Administrator', 'Global Administrator', 'Exchange Administrator', 'SharePoint Administrator'),
+
+        # API permissions for the Azure AD application.
+        [Parameter(Mandatory = $false)]
+        [System.String[]]
+        $ApplicationApiPermission = @('Office 365 Exchange Online:Exchange.ManageAsApp', 'Office 365 SharePoint Online:Sites.FullControl.All'),
+
+        # Tenant name used to store this regsitered app in the module context.
+        [Parameter(Mandatory = $false)]
         [System.String]
-        $ApplicationDirectoryRole = 'Company Administrator',
+        $TenantName,
 
         # Use the preview modules if available.
         [Parameter(Mandatory = $false)]
@@ -59,18 +74,19 @@ function Register-MicrosoftOnlineAutomation
 
     ## Azure AD Connection
 
+    $context = [PSCustomObject] @{ TenantId = '5f36d76e-9089-4ef3-94fc-d1758088e39a'; TenantDomain = 'arcadespizzilab.onmicrosoft.com' }
 
     if ($PSBoundParameters.ContainsKey('Credential'))
     {
         Write-Verbose 'Azure AD Connection => Open by using the specified credential'
 
-        $context = Connect-AzureAD -Credential $Credential
+        #$context = Connect-AzureAD -Credential $Credential
     }
     else
     {
         Write-Verbose 'Azure AD Connection => Open by using the UI to login...'
 
-        $context = Connect-AzureAD
+       # $context = Connect-AzureAD
     }
 
     # Exit if the connection was not succesful, e.g. is empty.
@@ -147,52 +163,51 @@ function Register-MicrosoftOnlineAutomation
         $certificate = New-SelfSignedCertificate @certificateSplat
     }
 
-    try
-    {
-        $certificatePath     = [System.IO.Path]::GetTempFileName()
-        $certificatePassword = ConvertTo-SecureString -String $application.AppId -Force -AsPlainText
-
-        Export-PfxCertificate -Cert $certificate -FilePath $certificatePath -Password $certificatePassword -Force | Out-Null
-        $certificatePfx = [System.Convert]::ToBase64String([System.IO.File]::ReadAllBytes($certificatePath))
-    }
-    finally
-    {
-        Remove-Item -Path $certificatePath -ErrorAction 'SilentlyContinue'
-    }
-
     Write-Verbose "Azure AD Application Cert => Thumbprint: $($certificate.Thumbprint)"
     Write-Verbose "Azure AD Application Cert => Subject: $($certificate.Subject)"
 
 
-    ## Azure AD Application Key
+    ## Azure AD Application Cert Key
 
-    $keyIdentifier = $certificate.Thumbprint.Substring(0, 30)
+    $certKeyIdentifier = $certificate.Thumbprint.Substring(0, 30)
 
-    $key = Get-AzureADApplicationKeyCredential -ObjectId $application.ObjectId | Where-Object { [System.Text.Encoding]::Default.GetString($_.CustomKeyIdentifier) -eq $keyIdentifier }
+    $certKey = Get-AzureADApplicationKeyCredential -ObjectId $application.ObjectId | Where-Object { [System.Text.Encoding]::Default.GetString($_.CustomKeyIdentifier) -eq $certKeyIdentifier }
 
-    if ($null -ne $key)
+    if ($null -ne $certKey)
     {
-        Write-Verbose "Azure AD Application Key => Use existing Key"
+        Write-Verbose "Azure AD Application Cert Key => Use existing Key"
     }
     else
     {
         # Exit if the user does not confirm the application registration.
-        if (-not $PSCmdlet.ShouldProcess($context.TenantDomain, 'Create App Key')) { return }
+        if (-not $PSCmdlet.ShouldProcess($context.TenantDomain, 'Create App Cert Key')) { return }
 
-        Write-Verbose "Azure AD Application Key => Register the Key"
+        Write-Verbose "Azure AD Application Cert Key => Register the Key"
 
-        $keySplat = @{
+        $certKeySplat = @{
             ObjectId            = $application.ObjectId
-            CustomKeyIdentifier = $keyIdentifier
+            CustomKeyIdentifier = $certKeyIdentifier
             Type                = 'AsymmetricX509Cert'
             Usage               = 'Verify'
             Value               = [System.Convert]::ToBase64String($certificate.GetRawCertData())
             EndDate             = $certificate.NotAfter
         }
-        $key = New-AzureADApplicationKeyCredential @keySplat
+        $certKey = New-AzureADApplicationKeyCredential @certKeySplat
     }
 
-    Write-Verbose "Azure AD Application Key => KeyId: $($key.KeyId)"
+    Write-Verbose "Azure AD Application Cert Key => KeyId: $($certKey.KeyId)"
+
+
+    ## Azure AD Application Secret Key
+
+    $secretKeyIdentifier = [System.Guid]::NewGuid().Guid.Replace('-', '').Substring(0, 30)
+
+    Write-Verbose "Azure AD Application Secret Key => Register the key"
+
+    # Exit if the user does not confirm the application registration.
+    if (-not $PSCmdlet.ShouldProcess($context.TenantDomain, 'Create App Secret Key')) { return }
+
+    $secretKey = New-AzureADApplicationPasswordCredential -ObjectId $application.ObjectId -CustomKeyIdentifier $secretKeyIdentifier -EndDate ([System.DateTime]::UtcNow.AddYears(10))
 
 
     ## Azure AD Application Principal
@@ -213,29 +228,131 @@ function Register-MicrosoftOnlineAutomation
         $principal = New-AzureADServicePrincipal -AppId $application.AppId
     }
 
+    Write-Verbose "Azure AD Application Principal => ObjectId: $($principal.ObjectId)"
+
+
+    ## Azure AD Application Role Template
+
+    for ($i = 0; $i -lt $ApplicationDirectoryRole.Count; $i++)
+    {
+        $role = Get-AzureADDirectoryRole | Where-Object { $_.DisplayName -eq $ApplicationDirectoryRole[$i] }
+
+        if ($null -eq $role)
+        {
+            $roleTemplate = Get-AzureADDirectoryRoleTemplate | Where-Object { $_.DisplayName -eq $ApplicationDirectoryRole[$i] }
+
+            if ($null -ne $roleTemplate)
+            {
+                # Exit if the user does not confirm the application registration.
+                if (-not $PSCmdlet.ShouldProcess($context.TenantDomain, 'Enable Role Template')) { return }
+
+                Write-Verbose "Azure AD Application Role Template [$i] => Enable Role Template"
+
+                Enable-AzureADDirectoryRole -RoleTemplateId $roleTemplate.ObjectId
+            }
+            else
+            {
+                Write-Verbose "Azure AD Application Role Template [$i] => Role Template missing"
+            }
+        }
+        else
+        {
+            Write-Verbose "Azure AD Application Role Template [$i] => Use existing Role Template"
+        }
+
+        Write-Verbose "Azure AD Application Role Template [$i] => DisplayName: $($ApplicationDirectoryRole[$i])"
+    }
+
 
     ## Azure AD Application Role
 
-    $role = Get-AzureADDirectoryRole | Where-Object { $_.DisplayName -eq $ApplicationDirectoryRole }
-
-    $member = Get-AzureADDirectoryRoleMember -ObjectId $role.ObjectId | Where-Object { $_.ObjectType -eq 'ServicePrincipal' -and $_.AppId -eq $application.AppId }
-
-    if ($null -ne $member)
+    for ($i = 0; $i -lt $ApplicationDirectoryRole.Count; $i++)
     {
-        Write-Verbose "Azure AD Application Role => App is Member of $ApplicationDirectoryRole"
+        $role = Get-AzureADDirectoryRole | Where-Object { $_.DisplayName -eq $ApplicationDirectoryRole[$i] }
+
+        if ($null -ne $role)
+        {
+            $member = Get-AzureADDirectoryRoleMember -ObjectId $role.ObjectId | Where-Object { $_.ObjectType -eq 'ServicePrincipal' -and $_.AppId -eq $application.AppId }
+
+            if ($null -ne $member)
+            {
+                Write-Verbose "Azure AD Application Role [$i] => Use existing Role"
+            }
+            else
+            {
+                # Exit if the user does not confirm the application registration.
+                if (-not $PSCmdlet.ShouldProcess($context.TenantDomain, 'Add App to Role')) { return }
+
+                Write-Verbose "Azure AD Application Role [$i] => Add App to Role"
+
+                $member = Add-AzureADDirectoryRoleMember -ObjectId $role.ObjectId -RefObjectId $principal.ObjectId
+            }
+
+            Write-Verbose "Azure AD Application Role [$i] => DisplayName: $($ApplicationDirectoryRole[$i])"
+        }
     }
-    else
+
+
+    ## Azure AD API Permissions
+
+    for ($i = 0; $i -lt $ApplicationApiPermission.Count; $i++)
     {
-        # Exit if the user does not confirm the application registration.
-        if (-not $PSCmdlet.ShouldProcess($context.TenantDomain, 'Add App to Role')) { return }
+        $apiServicePrincipalName = $ApplicationApiPermission[$i].Split(':')[0]
+        $apiPermissionName       = $ApplicationApiPermission[$i].Split(':')[1]
 
-        Write-Verbose "Azure AD Application Role => Add App to $ApplicationDirectoryRole"
+        Write-Verbose "Azure AD Application API Permission [$i] => ServicePrincipal: $apiServicePrincipalName"
+        Write-Verbose "Azure AD Application API Permission [$i] => Permission: $apiServicePrincipalName"
 
-        $member = Add-AzureADDirectoryRoleMember -ObjectId $role.ObjectId -RefObjectId $principal.ObjectId
+        $apiServicePrincipal = Get-AzureADServicePrincipal -All $true | Where-Object { $_.DisplayName -eq $apiServicePrincipalName }
+        $apiPermission = $apiServicePrincipal.AppRoles | Where-Object { $_.Value -eq $apiPermissionName }
+
+        $apiResourceAccess = [Microsoft.Open.AzureAD.Model.RequiredResourceAccess]::new()
+        $apiResourceAccess.ResourceAppId = $apiServicePrincipal.AppId
+        $apiResourceAccess.ResourceAccess = [Microsoft.Open.AzureAD.Model.ResourceAccess]::new($apiPermission.Id, 'Role')
+
+        $apiResourceAccessAll = Get-AzureADApplication -ObjectId $application.ObjectId | Select-Object -ExpandProperty 'RequiredResourceAccess'
+        $apiResourceAccessExist = $apiResourceAccessAll | Where-Object { $_.ResourceAppId -eq $apiResourceAccess.ResourceAppId -and $_.ResourceAccess.Id -eq $apiResourceAccess.ResourceAccess.Id -and $_.ResourceAccess.Type -eq $apiResourceAccess.ResourceAccess.Type }
+
+        if ($apiResourceAccessExist)
+        {
+            Write-Verbose "Azure AD Application API Permission [$i] => Use existing Resource Access"
+        }
+        else
+        {
+            # Exit if the user does not confirm the application registration.
+            if (-not $PSCmdlet.ShouldProcess($context.TenantDomain, 'Add Resource Access')) { return }
+
+            Write-Verbose "Azure AD Application API Permission [$i] => Register new Resource Access"
+
+            $apiResourceAccessAll += $apiResourceAccess
+            Set-AzureADApplication -ObjectId $application.ObjectId -RequiredResourceAccess $apiResourceAccessAll
+        }
+
+        # Grant-MicrosoftOnlineAdminConsent -TenantId $context.TenantId -ClientId $application.AppId -ClientId2 $application.ObjectId -ClientSecret (Protect-String -String $secretKey.Value) -ResourceId $principal.ObjectId -Scope $apiPermissionName
     }
 
+    # Start the browser to request the admin consent
+    $adminConsentUrl = "https://login.microsoftonline.com/$($context.TenantId)/adminconsent?client_id=$($application.AppId)"
+    Write-Verbose "Grant admin constent: $adminConsentUrl"
+    Start-Process $adminConsentUrl
 
-    $connectionString = '{0}:{1}:{2}:{3}' -f $context.TenantId, $application.AppId, $certificate.Thumbprint, $certificatePfx
 
-    return $connectionString
+    ## MicrosoftOnlineFever Tenant
+
+    if (-not $PSBoundParameters.ContainsKey('TenantName'))
+    {
+        $TenantName = $context.TenantDomain.Split('.')[0].ToUpper()
+    }
+
+    # Create and return the tenant.
+    $tenantSplat = @{
+        Name                  = $TenantName
+        TenantDomain          = $context.TenantDomain
+        TenantId              = $context.TenantId
+        ApplicationId         = $application.AppId
+        ClientId              = $application.AppId
+        ClientSecret          = Protect-String -String $secretKey.Value
+        CertificateThumbprint = $certificate.Thumbprint
+    }
+    Add-MicrosoftOnlineTenant @tenantSplat
 }

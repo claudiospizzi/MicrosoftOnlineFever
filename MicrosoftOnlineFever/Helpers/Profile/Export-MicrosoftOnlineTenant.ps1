@@ -28,6 +28,8 @@ function Export-MicrosoftOnlineTenant
             TenantDomain          = $currentTenant.TenantDomain
             TenantId              = $currentTenant.TenantId
             ApplicationId         = $currentTenant.ApplicationId
+            ClientId              = $currentTenant.ClientId
+            ClientSecret          = $currentTenant.ClientSecret | ConvertFrom-SecureString
             CertificateThumbprint = $currentTenant.CertificateThumbprint
             CertificateSecret     = $currentTenant.CertificateSecret | ConvertFrom-SecureString
             CertificatePfx        = $currentTenant.CertificatePfx
