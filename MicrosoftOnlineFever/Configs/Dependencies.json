@@ -7,6 +7,22 @@
         {
             "Name": "MSOnline",
             "Version": "1.1.183.57"
+        },
+        {
+            "Name": "Microsoft.Graph.Authentication",
+            "Version": "1.2.0"
+        },
+        {
+            "Name": "Az.Accounts",
+            "Version": "2.2.3"
+        },
+        {
+            "Name": "ExchangeOnlineManagement",
+            "Version": "2.0.3"
+        },
+        {
+            "Name": "PnP.PowerShell",
+            "Version": "1.2.0"
         }
     ],
     "PreviewModules": [
@@ -17,6 +33,22 @@
         {
             "Name": "MSOnline",
             "Version": "1.1.183.57"
+        },
+        {
+            "Name": "Microsoft.Graph.Authentication",
+            "Version": "1.2.0"
+        },
+        {
+            "Name": "Az.Accounts",
+            "Version": "2.2.3"
+        },
+        {
+            "Name": "ExchangeOnlineManagement",
+            "Version": "2.0.3"
+        },
+        {
+            "Name": "PnP.PowerShell",
+            "Version": "1.2.0"
         }
     ]
 }
