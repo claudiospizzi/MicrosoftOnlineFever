@@ -194,39 +194,6 @@ function Connect-MicrosoftOnline
             }
         }
     }
-
-
-
-    # $clientId = [System.Guid]::NewGuid().Guid
-    # $tenantId = 'arcadespizzilab.onmicrosoft.com'
-    # $resourceId = 'https://graph.windows.net'
-    # $redirectUri = new-object System.Uri("urn:ietf:wg:oauth:2.0:oob")
-    # $login = 'https://login.microsoftonline.com'
-
-    # $authContext = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContext("{0}/{1}" -f $login,$tenantId);
-    # $authenticationResult = $authContext.AcquireToken($resourceId,$clientID,$redirectUri);
-    # $token = $authenticationResult.AccessToken
-
-
-
-    # $tenant
-
-    # $tenantId, $applicationId, $certificateThumbprint, $certificatePfx = $ConnectionString.Split(':')
-
-    # if (-not (Test-Path "Cert:\CurrentUser\My\$certificateThumbprint"))
-    # {
-    #     # ToDo: Import Pfx...
-    # }
-
-    #
-
-
-    # $azureAccessToken = [Microsoft.Open.Azure.AD.CommonLibrary.AzureSession]::AccessTokens.AccessToken.AccessToken
-    # Connect-MsolService -AccessToken $azureAccessToken
-
-
-    # https://docs.microsoft.com/en-us/powershell/azure/active-directory/signing-in-service-principal?view=azureadps-2.0
-    # https://erjenrijnders.nl/2018/08/30/azuread-login-without-credentials-unattended/
 }
 
 # Register the argument completer for the Name parameter
