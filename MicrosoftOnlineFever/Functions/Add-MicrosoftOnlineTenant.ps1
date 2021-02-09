@@ -105,7 +105,7 @@ function Add-MicrosoftOnlineTenant
         try
         {
             $certificatePath   = [System.IO.Path]::GetTempFileName()
-            $CertificateSecret = ConvertTo-SecureString -String $application.AppId -Force -AsPlainText
+            $CertificateSecret = Protect-String -String $application.AppId
 
             Export-PfxCertificate -Cert "Cert:\CurrentUser\My\$CertificateThumbprint" -FilePath $certificatePath -Password $CertificateSecret -Force | Out-Null
             $CertificatePfx = [System.Convert]::ToBase64String([System.IO.File]::ReadAllBytes($certificatePath))
