@@ -34,7 +34,7 @@ the certificate based login.:
 
 Example workflow to use this module:
 
-````powershell
+```powershell
 # Register the enterprise application. A UI prompt will query for the login.
 Register-MicrosoftOnlineAutomation -Name 'Contoso' -Verbose
 
