@@ -19,6 +19,12 @@ function Test-MicrosoftOnlineModuleDependency
     [CmdletBinding()]
     param
     (
+        # The connection scope.
+        [Parameter(Mandatory = $false)]
+        [ValidateSet('AzureAD', 'MSOL', 'Graph', 'Azure', 'Exchange', 'SecurityCompliance', 'SharePoint', 'Teams')]
+        [System.String[]]
+        $Scope,
+
         # Use the preview modules if available.
         [Parameter(Mandatory = $false)]
         [Switch]
@@ -37,27 +43,31 @@ function Test-MicrosoftOnlineModuleDependency
 
     foreach ($module in $modules)
     {
-        $moduleName            = $module.Name
-        $moduleRequiredVersion = $module.Version
-
-        Write-Verbose "Module Dependency => Verify $moduleName"
-
-        $moduleInstalledVersion = Get-Module -Name $moduleName -ListAvailable -Verbose:$false |
-                                      Sort-Object -Property 'Version' |
-                                          Select-Object -ExpandProperty 'Version' -Last 1
-
-        if ($null -eq $moduleInstalledVersion)
+        # Only process the dependency module if the scope does match.
+        if (($module.Scope | Where-Object { $Scope -contains $_ }))
         {
-            throw "Module $moduleName not installed, please install the module."
+            $moduleName            = $module.Name
+            $moduleRequiredVersion = $module.Version
+
+            Write-Verbose "Module Dependency => Verify $moduleName"
+
+            $moduleInstalledVersion = Get-Module -Name $moduleName -ListAvailable -Verbose:$false |
+                                        Sort-Object -Property 'Version' |
+                                            Select-Object -ExpandProperty 'Version' -Last 1
+
+            if ($null -eq $moduleInstalledVersion)
+            {
+                throw "Module $moduleName not installed, please install the module."
+            }
+
+            if ($moduleInstalledVersion -lt $moduleRequiredVersion)
+            {
+                throw "Module $moduleName is not current, please update to at $moduleRequiredVersion or later."
+            }
+
+            Write-Verbose "Module Dependency => Import $moduleName $moduleInstalledVersion"
+
+            Import-Module -Name $moduleName -RequiredVersion $moduleInstalledVersion -Global -Verbose:$false
         }
-
-        if ($moduleInstalledVersion -lt $moduleRequiredVersion)
-        {
-            throw "Module $moduleName is not current, please update to at $moduleRequiredVersion or later."
-        }
-
-        Write-Verbose "Module Dependency => Import $moduleName $moduleInstalledVersion"
-
-        Import-Module -Name $moduleName -RequiredVersion $moduleInstalledVersion -Global -Verbose:$false
     }
 }

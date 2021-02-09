@@ -67,6 +67,7 @@
     FunctionsToExport = @(
         'Connect-MicrosoftOnline'
         'Get-MicrosoftOnlineTenant'
+        'Get-MicrosoftOnlineTenantConnectionString'
         'Add-MicrosoftOnlineTenant'
         'Register-MicrosoftOnlineAutomation'
     )

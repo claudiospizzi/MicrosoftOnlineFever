@@ -2,53 +2,75 @@
     "Modules": [
         {
             "Name": "AzureAD",
+            "Scope": [ "AzureAD" ],
             "Version": "2.0.2.128"
         },
         {
             "Name": "MSOnline",
+            "Scope": [ "MSOL" ],
             "Version": "1.1.183.57"
         },
         {
             "Name": "Microsoft.Graph.Authentication",
+            "Scope": [ "Graph" ],
             "Version": "1.2.0"
         },
         {
             "Name": "Az.Accounts",
+            "Scope": [ "Azure" ],
             "Version": "2.2.3"
         },
         {
             "Name": "ExchangeOnlineManagement",
+            "Scope": [ "Exchange", "SecurityCompliance" ],
             "Version": "2.0.3"
         },
         {
             "Name": "PnP.PowerShell",
+            "Scope": [ "SharePoint" ],
             "Version": "1.2.0"
+        },
+        {
+            "Name": "MicrosoftTeams",
+            "Scope": [ "Teams" ],
+            "Version": "1.1.6"
         }
     ],
     "PreviewModules": [
         {
             "Name": "AzureADPreview",
+            "Scope": [ "AzureAD" ],
             "Version": "2.0.2.129"
         },
         {
             "Name": "MSOnline",
+            "Scope": [ "MSOL" ],
             "Version": "1.1.183.57"
         },
         {
             "Name": "Microsoft.Graph.Authentication",
+            "Scope": [ "Graph" ],
             "Version": "1.2.0"
         },
         {
             "Name": "Az.Accounts",
+            "Scope": [ "Azure" ],
             "Version": "2.2.3"
         },
         {
             "Name": "ExchangeOnlineManagement",
+            "Scope": [ "Exchange", "SecurityCompliance" ],
             "Version": "2.0.3"
         },
         {
             "Name": "PnP.PowerShell",
+            "Scope": [ "SharePoint" ],
             "Version": "1.2.0"
+        },
+        {
+            "Name": "MicrosoftTeams",
+            "Scope": [ "Teams" ],
+            "Version": "1.1.6"
         }
     ]
 }

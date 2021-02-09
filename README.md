@@ -8,11 +8,50 @@ PowerShell module with functions to connect and manage Microsoft Online.
 
 ## Introduction
 
-ToDo...
+This module is a helper module to register the Azure AD application on a tenant,
+which then is used to silently connect to the various modules around Microsoft
+cloud services. The option to create a connection string for a tenant
+applications makes it possible, to pass the connection information to other
+users and machines.
+
+The following PowerShell modules currently support the silent certificate based
+authentication to the Microsoft cloud:
+
+- AzureAD ([Azure](https://www.powershellgallery.com/packages?q=AzureAD) module)
+- Graph ([Microsoft.Graph](https://www.powershellgallery.com/packages?q=Microsoft.Graph) modules)
+- Azure ([Az](https://www.powershellgallery.com/packages?q=Az) modules)
+- Exchange Online ([ExchangeOnlineManagement](https://www.powershellgallery.com/packages?q=ExchangeOnlineManagement) module)
+- SharePoint Online ([PnP.PowerShell](https://www.powershellgallery.com/packages?q=PnP.PowerShell) module)
+- Microsoft Teams ([MicrosoftTeams](https://www.powershellgallery.com/packages?q=MicrosoftTeams) modules)
+
+The following modules are currently not supported, because the don't implement
+the certificate based login.:
+
+- MSOL ([MSOnline](https://www.powershellgallery.com/packages?q=MSOnline) module)
+- Security & Compliance (Part of the [ExchangeOnlineManagement](https://www.powershellgallery.com/packages?q=ExchangeOnlineManagement) module)
 
 ## Features
 
-ToDo...
+Example workflow to use this module:
+
+````powershell
+# Register the enterprise application. A UI prompt will query for the login.
+Register-MicrosoftOnlineAutomation -Name 'Contoso' -Verbose
+
+# Now, we can check if the application is registered.
+Get-MicrosoftOnlineTenant -Name 'Contoso'
+
+# A connection string can be generated and afterwards be imported on an other
+# machine. The connection string contains sensitive information and must be
+# protected.
+$connectionString = Get-MicrosoftOnlineTenantConnectionString -Name 'Contoso'
+Add-MicrosoftOnlineTenant -Name 'ContosoClone' -ConnectionString $connectionString
+
+# Finally, we use the connect command or on of the aliases (aad, o365, m365) to
+# connect to the scope we current need. Not specifying any scopes will connect
+# to all supported scopes.
+Connect-MicrosoftOnline -Name 'Contoso' -Scope 'Exchange', 'SharePoint'
+```
 
 ## Versions
 
@@ -45,21 +84,19 @@ words are used to test this module:
 
 ## Contribute
 
-Please feel free to contribute by opening new issues or providing pull requests.
-For the best development experience, open this project as a folder in Visual
-Studio Code and ensure that the PowerShell extension is installed.
+Please feel free to contribute to this project. For the best development
+experience, please us the following tools:
 
 * [Visual Studio Code] with the [PowerShell Extension]
-* [Pester], [PSScriptAnalyzer] and [psake] PowerShell Modules
+* [Pester], [PSScriptAnalyzer], [InvokeBuild], [InvokeBuildHelper] modules
 
-[PowerShell Gallery]: https://www.powershellgallery.com/packages/MicrosoftOnlineFever
-[GitHub Releases]: https://github.com/claudiospizzi/MicrosoftOnlineFever/releases
-[Installing a PowerShell Module]: https://msdn.microsoft.com/en-us/library/dd878350
-
+[PowerShell Gallery]: https://psgallery.arcade.ch/feeds/powershell/ArcadeFramework
 [CHANGELOG.md]: CHANGELOG.md
 
 [Visual Studio Code]: https://code.visualstudio.com/
 [PowerShell Extension]: https://marketplace.visualstudio.com/items?itemName=ms-vscode.PowerShell
+
 [Pester]: https://www.powershellgallery.com/packages/Pester
 [PSScriptAnalyzer]: https://www.powershellgallery.com/packages/PSScriptAnalyzer
-[psake]: https://www.powershellgallery.com/packages/psake
+[InvokeBuild]: https://www.powershellgallery.com/packages/InvokeBuild
+[InvokeBuildHelper]: https://www.powershellgallery.com/packages/InvokeBuildHelper

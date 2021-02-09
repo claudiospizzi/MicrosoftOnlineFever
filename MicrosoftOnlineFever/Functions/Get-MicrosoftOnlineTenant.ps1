@@ -1,23 +1,25 @@
 <#
     .SYNOPSIS
-        Get all profiles for Microsoft Online in the Windows user profile.
+        Get Microsoft Online tenants of the module context.
 
     .DESCRIPTION
-        .
+        The MicrosoftOnlineFever module stores the tenants in the module
+        context. The context is loacted as config file in the current user
+        AppData folder: $Env:AppData\PowerShell\MicrosoftOnlineFever\.
 
     .INPUTS
-        .
+        None.
 
     .OUTPUTS
-        MicrosoftOnlineAce
+        MicrosoftOnlineFever.Tenant. The tenant object.
 
     .EXAMPLE
-        PS C:\> Get-MicrosoftOnlineProfile
-        Get all profiles.
+        PS C:\> Get-MicrosoftOnlineTenant
+        Get all tenants.
 
     .EXAMPLE
-        PS C:\> Get-MicrosoftOnlineProfile -Name 'Contoso', 'Adatum*'
-        Get all profiles where the name is 'Contoso' or starts with 'Adatum'.
+        PS C:\> Get-MicrosoftOnlineTenant -Name 'Contoso', 'Adatum*'
+        Get all tenants where the name is 'Contoso' or starts with 'Adatum'.
 
     .LINK
         https://github.com/claudiospizzi/MicrosoftOnlineFever

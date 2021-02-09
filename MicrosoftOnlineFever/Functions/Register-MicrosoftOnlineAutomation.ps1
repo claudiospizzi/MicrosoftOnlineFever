@@ -29,6 +29,11 @@ function Register-MicrosoftOnlineAutomation
     [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'High')]
     param
     (
+        # Tenant name used to store this regsitered app in the module context.
+        [Parameter(Mandatory = $false)]
+        [System.String]
+        $Name,
+
         # Credential to connect to the Azure AD. Only usable if two factor is
         # not enabled. If the credential is not specified, a UI popup will
         # prompt for the Microsoft Online login.
@@ -57,11 +62,6 @@ function Register-MicrosoftOnlineAutomation
         [System.String[]]
         $ApplicationApiPermission = @('Office 365 Exchange Online:Exchange.ManageAsApp', 'Office 365 SharePoint Online:Sites.FullControl.All'),
 
-        # Tenant name used to store this regsitered app in the module context.
-        [Parameter(Mandatory = $false)]
-        [System.String]
-        $TenantName,
-
         # Use the preview modules if available.
         [Parameter(Mandatory = $false)]
         [Alias('Preview')]
@@ -69,7 +69,7 @@ function Register-MicrosoftOnlineAutomation
         $UsePreviewModule
     )
 
-    Test-MicrosoftOnlineModuleDependency -UsePreviewModule:$UsePreviewModule
+    Test-MicrosoftOnlineModuleDependency -Scope 'AzureAD' -UsePreviewModule:$UsePreviewModule
 
 
     ## Azure AD Connection
@@ -80,13 +80,13 @@ function Register-MicrosoftOnlineAutomation
     {
         Write-Verbose 'Azure AD Connection => Open by using the specified credential'
 
-        #$context = Connect-AzureAD -Credential $Credential
+        $context = Connect-AzureAD -Credential $Credential
     }
     else
     {
         Write-Verbose 'Azure AD Connection => Open by using the UI to login...'
 
-       # $context = Connect-AzureAD
+        $context = Connect-AzureAD
     }
 
     # Exit if the connection was not succesful, e.g. is empty.
@@ -129,7 +129,17 @@ function Register-MicrosoftOnlineAutomation
         $application = New-AzureADApplication @applicationSplat
     }
 
+    $applicationReplyUrl = 'https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/Overview/appId/{0}/isMSAApp/' -f $application.AppId
+    if ($application.ReplyUrls -notcontains $applicationReplyUrl)
+    {
+        Write-Verbose "Azure AD Application => Register the Reply Url"
+
+        Set-AzureADApplication -ObjectId $application.ObjectId -ReplyUrls $applicationReplyUrl
+        $application = Get-AzureADApplication | Where-Object { $_.IdentifierUris -contains $ApplicationIdentifierUri }
+    }
+
     Write-Verbose "Azure AD Application => AppId: $($application.AppId)"
+    Write-Verbose "Azure AD Application => ObjectId: $($application.ObjectId)"
     Write-Verbose "Azure AD Application => DisplayName: $($application.DisplayName)"
 
 
@@ -310,8 +320,12 @@ function Register-MicrosoftOnlineAutomation
         $apiResourceAccess.ResourceAppId = $apiServicePrincipal.AppId
         $apiResourceAccess.ResourceAccess = [Microsoft.Open.AzureAD.Model.ResourceAccess]::new($apiPermission.Id, 'Role')
 
-        $apiResourceAccessAll = Get-AzureADApplication -ObjectId $application.ObjectId | Select-Object -ExpandProperty 'RequiredResourceAccess'
-        $apiResourceAccessExist = $apiResourceAccessAll | Where-Object { $_.ResourceAppId -eq $apiResourceAccess.ResourceAppId -and $_.ResourceAccess.Id -eq $apiResourceAccess.ResourceAccess.Id -and $_.ResourceAccess.Type -eq $apiResourceAccess.ResourceAccess.Type }
+        $apiResourceAccessAll = @(Get-AzureADApplication -ObjectId $application.ObjectId | Select-Object -ExpandProperty 'RequiredResourceAccess')
+        $apiResourceAccessExist = $false
+        if ($null -ne $apiResourceAccessAll -and $apiResourceAccessAll.Count -gt 0)
+        {
+            $apiResourceAccessExist = [System.Boolean] ($apiResourceAccessAll | Where-Object { $_.ResourceAppId -eq $apiResourceAccess.ResourceAppId -and $_.ResourceAccess.Id -eq $apiResourceAccess.ResourceAccess.Id -and $_.ResourceAccess.Type -eq $apiResourceAccess.ResourceAccess.Type })
+        }
 
         if ($apiResourceAccessExist)
         {
@@ -324,31 +338,39 @@ function Register-MicrosoftOnlineAutomation
 
             Write-Verbose "Azure AD Application API Permission [$i] => Register new Resource Access"
 
-            $apiResourceAccessAll += $apiResourceAccess
-            Set-AzureADApplication -ObjectId $application.ObjectId -RequiredResourceAccess $apiResourceAccessAll
+            # Use an ArrayList instead of an array, becaue the type used object
+            # type [Microsoft.Open.AzureAD.Model.RequiredResourceAccess] has a
+            # behaviour that adding elements to array (+=) always ends in an
+            # error: Does not contain a method named 'op_Addition'.
+            $apiResourceAccessNew = [System.Collections.ArrayList]::new()
+            $apiResourceAccessAll | ForEach-Object { $apiResourceAccessNew.Add($_) | Out-Null }
+            $apiResourceAccessNew.Add($apiResourceAccess) | Out-Null
+
+            Set-AzureADApplication -ObjectId $application.ObjectId -RequiredResourceAccess $apiResourceAccessNew
         }
 
         # Grant-MicrosoftOnlineAdminConsent -TenantId $context.TenantId -ClientId $application.AppId -ClientId2 $application.ObjectId -ClientSecret (Protect-String -String $secretKey.Value) -ResourceId $principal.ObjectId -Scope $apiPermissionName
     }
 
-    # Start the browser to request the admin consent
+    # Start the browser to request the admin consent by using the Internet
+    # Explorer in the InPrivate mode.
     $adminConsentUrl = "https://login.microsoftonline.com/$($context.TenantId)/adminconsent?client_id=$($application.AppId)"
     Write-Verbose "Grant admin constent: $adminConsentUrl"
-    Start-Process $adminConsentUrl
+    & 'C:\Program Files\Internet Explorer\iexplore.exe' -private $adminConsentUrl
 
 
     ## MicrosoftOnlineFever Tenant
 
-    if (-not $PSBoundParameters.ContainsKey('TenantName'))
+    if (-not $PSBoundParameters.ContainsKey('Name'))
     {
-        $TenantName = $context.TenantDomain.Split('.')[0].ToUpper()
+        $Name = $context.TenantDomain.Split('.')[0].ToUpper()
     }
 
     # Create and return the tenant.
     $tenantSplat = @{
-        Name                  = $TenantName
-        TenantDomain          = $context.TenantDomain
+        Name                  = $Name
         TenantId              = $context.TenantId
+        TenantDomain          = $context.TenantDomain
         ApplicationId         = $application.AppId
         ClientId              = $application.AppId
         ClientSecret          = Protect-String -String $secretKey.Value

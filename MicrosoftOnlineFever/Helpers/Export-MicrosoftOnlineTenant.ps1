@@ -25,8 +25,8 @@ function Export-MicrosoftOnlineTenant
         $objects += [PSCustomObject] @{
             _Version              = 1
             Name                  = $currentTenant.Name
-            TenantDomain          = $currentTenant.TenantDomain
             TenantId              = $currentTenant.TenantId
+            TenantDomain          = $currentTenant.TenantDomain
             ApplicationId         = $currentTenant.ApplicationId
             ClientId              = $currentTenant.ClientId
             ClientSecret          = $currentTenant.ClientSecret | ConvertFrom-SecureString

@@ -14,11 +14,12 @@
             <Width>20</Width>
           </TableColumnHeader>
           <TableColumnHeader>
-            <Label>TenantDomain</Label>
+            <Label>TenantId</Label>
             <Width>40</Width>
           </TableColumnHeader>
           <TableColumnHeader>
-            <Label>ConnectionString</Label>
+            <Label>TenantDomain</Label>
+            <Width>40</Width>
           </TableColumnHeader>
         </TableHeaders>
         <TableRowEntries>
@@ -28,10 +29,10 @@
                 <PropertyName>Name</PropertyName>
               </TableColumnItem>
               <TableColumnItem>
-                <PropertyName>TenantDomain</PropertyName>
+                <PropertyName>TenantId</PropertyName>
               </TableColumnItem>
               <TableColumnItem>
-                <PropertyName>ConnectionString</PropertyName>
+                <PropertyName>TenantDomain</PropertyName>
               </TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>

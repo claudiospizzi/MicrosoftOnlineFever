@@ -1,19 +1,30 @@
 <#
     .SYNOPSIS
-        .
+        Connect the PowerShell modules to the specified tenant.
 
     .DESCRIPTION
-        .
+        This command uses the registered Microsoft Online tenant with it's
+        connection details to connect to all services and their moduels
+        specified in the scope.
 
     .INPUTS
-        .
+        None.
 
     .OUTPUTS
-        .
+        MicrosoftOnlineFever.Connection. The opened connections.
 
     .EXAMPLE
-        PS C:\> Connect-MicrosoftOnline
-        .
+        PS C:\> Connect-MicrosoftOnline -Name 'Contoso'
+        Connect to all supported scopes on the specified tenant.
+
+    .EXAMPLE
+        PS C:\> Connect-MicrosoftOnline -Name 'Contoso' -Scope 'Exchange', 'SharePoint'
+        Connect to Exchange Online and SharePoint Online on the specified
+        tenant.
+
+    .EXAMPLE
+        PS C:\> m365 'Contoso'
+        Use one of the aliases to connect to the tenant.
 
     .LINK
         https://github.com/claudiospizzi/MicrosoftOnlineFever
@@ -41,13 +52,13 @@ function Connect-MicrosoftOnline
         $UsePreviewModule
     )
 
-    Test-MicrosoftOnlineModuleDependency -UsePreviewModule:$UsePreviewModule
-
     # Define the default scopes, if non was specified.
     if (-not $PSBoundParameters.ContainsKey('Scope'))
     {
         $Scope = 'AzureAD', 'Graph', 'Azure', 'Exchange', 'SharePoint', 'Teams'
     }
+
+    Test-MicrosoftOnlineModuleDependency -Scope $Scope -UsePreviewModule:$UsePreviewModule
 
     # Ensure that the Exchange scope is used if the SecurityCompliance is
     # requested. This depends on the Exchange scope.
@@ -60,6 +71,10 @@ function Connect-MicrosoftOnline
     if ($null -eq $tenant)
     {
         throw "Tenant named $Name not found."
+    }
+    if (@($tenant).Count -gt 1)
+    {
+        throw "Multiple tenants named $Name found."
     }
 
     $orderedScopes = 'AzureAD', 'MSOL', 'Graph', 'Azure', 'Exchange', 'SecurityCompliance', 'SharePoint', 'Teams'
@@ -95,7 +110,7 @@ function Connect-MicrosoftOnline
                 {
                     # Connect-MsolService
 
-                    throw 'The MSOL module is currently not supported.'
+                    throw 'The MSOL module is currently not supported. Use this command to connect: Connect-MsolService'
                 }
 
                 # Microsoft Graph (*-Mg*)
@@ -139,7 +154,7 @@ function Connect-MicrosoftOnline
                 {
                     # Connect-IPPSSession
 
-                    throw 'The MSOL module is currently not supported.'
+                    throw 'The SecurityCompliance module is currently not supported. Use this command to connect: Connect-IPPSSession'
                 }
 
                 # Microsoft 365 Patterns and Practices PowerShell Cmdlets (*-PnP*)
@@ -149,7 +164,8 @@ function Connect-MicrosoftOnline
                     $Env:PNPPOWERSHELL_UPDATECHECK = $false
                     $Env:PNPPOWERSHELL_DISABLETELEMETRY = $true
 
-                    Connect-PnPOnline -ClientId $tenant.ApplicationId -CertificateBase64Encoded $tenant.CertificatePfx -CertificatePassword $tenant.CertificateSecret -Url "https://$($tenant.TenantName).sharepoint.com" -Tenant $tenant.TenantDomain -Verbose:$false | Out-Null
+                    $tenantSharePointUrl = 'https://{0}.sharepoint.com' -f $tenant.TenantDomain.Split('.')[0]
+                    Connect-PnPOnline -ClientId $tenant.ApplicationId -CertificateBase64Encoded $tenant.CertificatePfx -CertificatePassword $tenant.CertificateSecret -Url $tenantSharePointUrl -Tenant $tenant.TenantDomain -Verbose:$false | Out-Null
 
                     Get-PnPConnection| ForEach-Object {
                         $connection.Module = 'PnP.PowerShell'
@@ -181,6 +197,17 @@ function Connect-MicrosoftOnline
 
 
 
+    # $clientId = [System.Guid]::NewGuid().Guid
+    # $tenantId = 'arcadespizzilab.onmicrosoft.com'
+    # $resourceId = 'https://graph.windows.net'
+    # $redirectUri = new-object System.Uri("urn:ietf:wg:oauth:2.0:oob")
+    # $login = 'https://login.microsoftonline.com'
+
+    # $authContext = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContext("{0}/{1}" -f $login,$tenantId);
+    # $authenticationResult = $authContext.AcquireToken($resourceId,$clientID,$redirectUri);
+    # $token = $authenticationResult.AccessToken
+
+
 
     # $tenant
 
@@ -209,14 +236,3 @@ Register-ArgumentCompleter -CommandName 'Connect-MicrosoftOnline' -ParameterName
         [System.Management.Automation.CompletionResult]::new($_.Name, $_.Name, 'ParameterValue', $_.Name)
     }
 }
-
-
-# $clientId = [System.Guid]::NewGuid().Guid
-# $tenantId = 'arcadespizzilab.onmicrosoft.com'
-# $resourceId = 'https://graph.windows.net'
-# $redirectUri = new-object System.Uri("urn:ietf:wg:oauth:2.0:oob")
-# $login = 'https://login.microsoftonline.com'
-
-# $authContext = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContext("{0}/{1}" -f $login,$tenantId);
-# $authenticationResult = $authContext.AcquireToken($resourceId,$clientID,$redirectUri);
-# $token = $authenticationResult.AccessToken

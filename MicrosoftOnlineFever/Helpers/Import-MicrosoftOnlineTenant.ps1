@@ -34,8 +34,8 @@ function Import-MicrosoftOnlineTenant
             $tenants += [PSCustomObject] @{
                 PSTypeName            = 'MicrosoftOnlineFever.Tenant'
                 Name                  = $object.Name
-                TenantDomain          = $object.TenantDomain
                 TenantId              = $object.TenantId
+                TenantDomain          = $object.TenantDomain
                 ApplicationId         = $object.ApplicationId
                 ClientId              = $object.ClientId
                 ClientSecret          = $object.ClientSecret | ConvertTo-SecureString

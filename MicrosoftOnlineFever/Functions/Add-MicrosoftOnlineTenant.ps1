@@ -30,17 +30,17 @@ function Add-MicrosoftOnlineTenant
         [System.String]
         $Name,
 
-        # Name of the tenant domain.
-        [Parameter(Mandatory = $true, ParameterSetName = 'Default')]
-        [ValidatePattern('^[a-zA-Z0-9-]*\.onmicrosoft\.com$')]
-        [System.String]
-        $TenantDomain,
-
         # Id of the tenant.
         [Parameter(Mandatory = $true, ParameterSetName = 'Default')]
         [ValidatePattern('^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$')]
         [System.String]
         $TenantId,
+
+        # Name of the tenant domain.
+        [Parameter(Mandatory = $true, ParameterSetName = 'Default')]
+        [ValidatePattern('^[a-zA-Z0-9-]*\.onmicrosoft\.com$')]
+        [System.String]
+        $TenantDomain,
 
         # Id of the PowerShell Automation application in the tenant.
         [Parameter(Mandatory = $true, ParameterSetName = 'Default')]
@@ -87,10 +87,10 @@ function Add-MicrosoftOnlineTenant
 
     if ($PSCmdlet.ParameterSetName -eq 'ConnectionString')
     {
-        $TenantDomain, $TenantId, $ApplicationId, $ClientId, $clientSecretPlain, $CertificateThumbprint, $certificateSecretPlain, $CertificatePfx = $ConnectionString.Split(':')
+        $TenantId, $TenantDomain, $ApplicationId, $ClientId, $clientSecretPlain, $CertificateThumbprint, $certificateSecretPlain, $CertificatePfx = $ConnectionString.Split(':', 8)
 
         $ClientSecret      = Protect-String -String ([System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String($clientSecretPlain)))
-        $CertificateSecret = Protect-String -String $certificateSecretPlain
+        $CertificateSecret = Protect-String -String ([System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String($certificateSecretPlain)))
     }
 
     $TenantId              = $TenantId.ToLower()
@@ -142,8 +142,8 @@ function Add-MicrosoftOnlineTenant
     $tenant = [PSCustomObject] @{
         PSTypeName            = 'MicrosoftOnlineFever.Tenant'
         Name                  = $Name
-        TenantDomain          = $TenantDomain
         TenantId              = $TenantId
+        TenantDomain          = $TenantDomain
         ApplicationId         = $ApplicationId
         ClientId              = $ClientId
         ClientSecret          = $ClientSecret
