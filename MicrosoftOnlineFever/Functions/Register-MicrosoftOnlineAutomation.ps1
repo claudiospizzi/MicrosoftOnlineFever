@@ -439,10 +439,10 @@ function Register-MicrosoftOnlineAutomation
         {
             do
             {
-                Write-Host "`nChoose`nHow to process with the password of the existing fallback user?`n[U] Use current password  [R] Reset current password: "
+                Write-Host "`nChoose`nHow to process with the password of the existing fallback user?`n[U] Use current password  [R] Reset current password: " -NoNewline
                 $fallbackPasswordOption = Read-Host
             }
-            while ($fallbackPasswordOption -notin 'T', 'R')
+            while ($fallbackPasswordOption -notin 'U', 'R')
         }
 
         if ($fallbackPasswordOption -eq 'R')
