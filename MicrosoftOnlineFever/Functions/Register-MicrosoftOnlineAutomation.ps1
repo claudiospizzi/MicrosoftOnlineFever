@@ -27,6 +27,7 @@
 function Register-MicrosoftOnlineAutomation
 {
     [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'High')]
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '', Scope='Function', Target='Register-MicrosoftOnlineAutomation')]
     param
     (
         # Tenant name used to store this regsitered app in the module context.

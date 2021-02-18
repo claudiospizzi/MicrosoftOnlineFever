@@ -5,6 +5,7 @@
 function New-MicrosoftOnlinePassword
 {
     [CmdletBinding()]
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Scope='Function', Target='New-MicrosoftOnlinePassword')]
     [OutputType([System.String])]
     param
     (
