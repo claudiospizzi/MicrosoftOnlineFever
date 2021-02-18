@@ -42,6 +42,16 @@ function Add-MicrosoftOnlineTenant
         [System.String]
         $TenantDomain,
 
+        # The fallback user principal name.
+        [Parameter(Mandatory = $true, ParameterSetName = 'Default')]
+        [System.String]
+        $FallbackUsername,
+
+        # The fallback password.
+        [Parameter(Mandatory = $true, ParameterSetName = 'Default')]
+        [System.Security.SecureString]
+        $FallbackPassword,
+
         # Id of the PowerShell Automation application in the tenant.
         [Parameter(Mandatory = $true, ParameterSetName = 'Default')]
         [ValidatePattern('^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$')]
@@ -87,8 +97,9 @@ function Add-MicrosoftOnlineTenant
 
     if ($PSCmdlet.ParameterSetName -eq 'ConnectionString')
     {
-        $TenantId, $TenantDomain, $ApplicationId, $ClientId, $clientSecretPlain, $CertificateThumbprint, $certificateSecretPlain, $CertificatePfx = $ConnectionString.Split(':', 8)
+        $TenantId, $TenantDomain, $FallbackUsername, $fallbackPasswordPlain, $ApplicationId, $ClientId, $clientSecretPlain, $CertificateThumbprint, $certificateSecretPlain, $CertificatePfx = $ConnectionString.Split(':', 10)
 
+        $FallbackPassword  = Protect-String -String ([System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String($fallbackPasswordPlain)))
         $ClientSecret      = Protect-String -String ([System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String($clientSecretPlain)))
         $CertificateSecret = Protect-String -String ([System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String($certificateSecretPlain)))
     }
@@ -144,6 +155,8 @@ function Add-MicrosoftOnlineTenant
         Name                  = $Name
         TenantId              = $TenantId
         TenantDomain          = $TenantDomain
+        FallbackUsername      = $FallbackUsername
+        FallbackPassword      = $FallbackPassword
         ApplicationId         = $ApplicationId
         ClientId              = $ClientId
         ClientSecret          = $ClientSecret

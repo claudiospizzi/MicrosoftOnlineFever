@@ -27,6 +27,8 @@ function Export-MicrosoftOnlineTenant
             Name                  = $currentTenant.Name
             TenantId              = $currentTenant.TenantId
             TenantDomain          = $currentTenant.TenantDomain
+            FallbackUsername      = $currentTenant.FallbackUsername
+            FallbackPassword      = $currentTenant.FallbackPassword | ConvertFrom-SecureString
             ApplicationId         = $currentTenant.ApplicationId
             ClientId              = $currentTenant.ClientId
             ClientSecret          = $currentTenant.ClientSecret | ConvertFrom-SecureString

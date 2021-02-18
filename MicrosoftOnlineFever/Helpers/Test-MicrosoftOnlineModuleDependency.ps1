@@ -21,7 +21,7 @@ function Test-MicrosoftOnlineModuleDependency
     (
         # The connection scope.
         [Parameter(Mandatory = $false)]
-        [ValidateSet('AzureAD', 'MSOL', 'Graph', 'Azure', 'Exchange', 'SecurityCompliance', 'SharePoint', 'Teams')]
+        [ValidateSet('AzureAD', 'MSOL', 'Graph', 'Azure', 'Exchange', 'SecurityCompliance', 'SharePoint', 'Teams', 'SkypeForBusiness')]
         [System.String[]]
         $Scope,
 

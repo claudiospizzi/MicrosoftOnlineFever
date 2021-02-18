@@ -55,12 +55,22 @@ function Register-MicrosoftOnlineAutomation
         # Directory role used by the Azure AD application.
         [Parameter(Mandatory = $false)]
         [System.String[]]
-        $ApplicationDirectoryRole = @('Company Administrator', 'Global Administrator', 'Exchange Administrator', 'SharePoint Administrator'),
+        $ApplicationDirectoryRole = @('Global Administrator', 'Exchange Administrator', 'SharePoint Administrator'),
 
         # API permissions for the Azure AD application.
         [Parameter(Mandatory = $false)]
         [System.String[]]
         $ApplicationApiPermission = @('Office 365 Exchange Online:Exchange.ManageAsApp', 'Office 365 SharePoint Online:Sites.FullControl.All'),
+
+        # Fallback user if the appication based login is not possible.
+        [Parameter(Mandatory = $false)]
+        [System.Management.Automation.PSCredential]
+        $FallbackCredential,
+
+        # Permission for the fallback user.
+        [Parameter(Mandatory = $false)]
+        [System.String[]]
+        $FallbackDirectoryRole = @('Global Reader', 'License Administrator', 'User Administrator'),
 
         # Use the preview modules if available.
         [Parameter(Mandatory = $false)]
@@ -352,6 +362,165 @@ function Register-MicrosoftOnlineAutomation
         # Grant-MicrosoftOnlineAdminConsent -TenantId $context.TenantId -ClientId $application.AppId -ClientId2 $application.ObjectId -ClientSecret (Protect-String -String $secretKey.Value) -ResourceId $principal.ObjectId -Scope $apiPermissionName
     }
 
+
+    ## AzureAD Fallback User
+
+    # First, check if we have a username for the fallback user. If not
+    # specified, generate the default user id.
+    $fallbackUsername = 'powershell-automation@{0}' -f $context.TenantDomain
+    $fallbackPassword = $null
+    if ($null -ne $FallbackCredential)
+    {
+        $fallbackUsername = $FallbackCredential.UserName
+        $fallbackPassword = $FallbackCredential.GetNetworkCredential().Password
+    }
+
+    # Now, we check if the use exists on the tenant.
+    $fallbackAccount = Get-AzureADUser -Filter "userPrincipalName eq '$fallbackUsername'"
+    if ($null -eq $fallbackAccount)
+    {
+        Write-Verbose 'Azure AD Fallback User => Existing: False'
+        Write-Verbose "Azure AD Fallback User => Username: $fallbackUsername"
+
+        if ($null -eq $fallbackPassword)
+        {
+            Write-Verbose 'Azure AD Fallback User => Password: ***   (generated)'
+
+            $fallbackPassword = New-MicrosoftOnlinePassword
+        }
+        else
+        {
+            Write-Verbose "Azure AD Fallback User => Password: ***   (specified)"
+        }
+
+        # Exit if the user does not confirm the application registration.
+        if (-not $PSCmdlet.ShouldProcess($fallbackUsername, 'Create Fallback User')) { return }
+
+        $fallbackPasswordProfile = [Microsoft.Open.AzureAD.Model.PasswordProfile]::new()
+        $fallbackPasswordProfile.ForceChangePasswordNextLogin = $false
+        $fallbackPasswordProfile.EnforceChangePasswordPolicy = $false
+        $fallbackPasswordProfile.Password = $fallbackPassword
+
+        $fallbackNewUserSplat = @{
+            UserPrincipalName = $fallbackUsername
+            DisplayName       = $fallbackUsername.Split('@')[0]
+            MailNickName      = $fallbackUsername.Split('@')[0]
+            AccountEnabled    = $true
+            PasswordProfile   = $fallbackPasswordProfile
+        }
+        $fallbackAccount = New-AzureADUser @fallbackNewUserSplat
+    }
+    else
+    {
+        Write-Verbose "Azure AD Fallback User => Existing: True"
+        Write-Verbose "Azure AD Fallback User => Username: $fallbackUsername"
+
+        if ($null -eq $fallbackPassword)
+        {
+            do
+            {
+                Write-Host "`nChoose`nHow to process with the password of the existing fallback user?`n[E] Enter the current password  [R] Reset with a random password: " -NoNewline
+                $fallbackPasswordOption = Read-Host
+            }
+            while ($fallbackPasswordOption -notin 'E', 'R')
+
+            if ($fallbackPasswordOption -eq 'E')
+            {
+                $fallbackPassword = Read-Host -Prompt 'Fallback Password' -AsSecureString | Unprotect-SecureString
+            }
+
+            if ($fallbackPasswordOption -eq 'R')
+            {
+                $fallbackPassword = New-MicrosoftOnlinePassword
+            }
+        }
+        else
+        {
+            do
+            {
+                Write-Host "`nChoose`nHow to process with the password of the existing fallback user?`n[U] Use current password  [R] Reset current password: "
+                $fallbackPasswordOption = Read-Host
+            }
+            while ($fallbackPasswordOption -notin 'T', 'R')
+        }
+
+        if ($fallbackPasswordOption -eq 'R')
+        {
+            # Exit if the user does not confirm the application registration.
+            if (-not $PSCmdlet.ShouldProcess($fallbackUsername, 'Set Fallback User Password')) { return }
+
+            Set-AzureADUserPassword -ObjectId $fallbackUsername -Password (Protect-String -String $fallbackPassword) -ForceChangePasswordNextLogin $false -EnforceChangePasswordPolicy $false
+        }
+    }
+
+    Write-Verbose "Azure AD Fallback User => ObjectId: $($fallbackAccount.ObjectId)"
+
+
+
+    ## AzureAD Fallback Directory Role Template
+
+    for ($i = 0; $i -lt $FallbackDirectoryRole.Count; $i++)
+    {
+        $role = Get-AzureADDirectoryRole | Where-Object { $_.DisplayName -eq $FallbackDirectoryRole[$i] }
+
+        if ($null -eq $role)
+        {
+            $roleTemplate = Get-AzureADDirectoryRoleTemplate | Where-Object { $_.DisplayName -eq $FallbackDirectoryRole[$i] }
+
+            if ($null -ne $roleTemplate)
+            {
+                # Exit if the user does not confirm.
+                if (-not $PSCmdlet.ShouldProcess($context.TenantDomain, 'Enable Role Template')) { return }
+
+                Write-Verbose "Azure AD Fallback Role Template [$i] => Enable Role Template"
+
+                Enable-AzureADDirectoryRole -RoleTemplateId $roleTemplate.ObjectId
+            }
+            else
+            {
+                Write-Verbose "Azure AD Fallback Role Template [$i] => Role Template missing"
+            }
+        }
+        else
+        {
+            Write-Verbose "Azure AD Fallback Role Template [$i] => Use existing Role Template"
+        }
+
+        Write-Verbose "Azure AD Fallback Role Template [$i] => DisplayName: $($FallbackDirectoryRole[$i])"
+    }
+
+
+    ## AzureAD Fallback Directory Role
+
+    for ($i = 0; $i -lt $FallbackDirectoryRole.Count; $i++)
+    {
+        $role = Get-AzureADDirectoryRole | Where-Object { $_.DisplayName -eq $FallbackDirectoryRole[$i] }
+
+        if ($null -ne $role)
+        {
+            $member = Get-AzureADDirectoryRoleMember -ObjectId $role.ObjectId | Where-Object { $_.ObjectType -eq 'User' -and $_.UserPrincipalName -eq $fallbackUsername }
+
+            if ($null -ne $member)
+            {
+                Write-Verbose "Azure AD Fallback Role [$i] => Use existing Role"
+            }
+            else
+            {
+                # Exit if the user does not confirm.
+                if (-not $PSCmdlet.ShouldProcess($context.TenantDomain, 'Add User to Role')) { return }
+
+                Write-Verbose "Azure AD Fallback Role [$i] => Add User to Role"
+
+                $member = Add-AzureADDirectoryRoleMember -ObjectId $role.ObjectId -RefObjectId $fallbackAccount.ObjectId
+            }
+
+            Write-Verbose "Azure AD Fallback Role [$i] => DisplayName: $($FallbackDirectoryRole[$i])"
+        }
+    }
+
+
+    ## Ask for Consent
+
     # Start the browser to request the admin consent by using the Internet
     # Explorer in the InPrivate mode.
     $adminConsentUrl = "https://login.microsoftonline.com/$($context.TenantId)/adminconsent?client_id=$($application.AppId)"
@@ -371,6 +540,8 @@ function Register-MicrosoftOnlineAutomation
         Name                  = $Name
         TenantId              = $context.TenantId
         TenantDomain          = $context.TenantDomain
+        FallbackUsername      = $fallbackUsername
+        FallbackPassword      = Protect-String -String $fallbackPassword
         ApplicationId         = $application.AppId
         ClientId              = $application.AppId
         ClientSecret          = Protect-String -String $secretKey.Value

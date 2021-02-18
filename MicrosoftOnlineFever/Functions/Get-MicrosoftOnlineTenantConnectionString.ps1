@@ -37,17 +37,20 @@ function Get-MicrosoftOnlineTenantConnectionString
 
     foreach ($tenant in $tenants)
     {
+        $fallbackPassword  = [System.Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes((Unprotect-SecureString -SecureString $tenant.FallbackPassword)))
         $clientSecret      = [System.Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes((Unprotect-SecureString -SecureString $tenant.ClientSecret)))
         $certificateSecret = [System.Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes((Unprotect-SecureString -SecureString $tenant.CertificateSecret)))
 
-        $connectionString = '{0}:{1}:{2}:{3}:{4}:{5}:{6}:{7}' -f $tenant.TenantId,
-                                                                 $tenant.TenantDomain,
-                                                                 $tenant.ApplicationId,
-                                                                 $tenant.ClientId,
-                                                                 $clientSecret,
-                                                                 $tenant.CertificateThumbprint,
-                                                                 $certificateSecret,
-                                                                 $tenant.CertificatePfx
+        $connectionString = '{0}:{1}:{2}:{3}:{4}:{5}:{6}:{7}:{8}:{9}' -f $tenant.TenantId,
+                                                                         $tenant.TenantDomain,
+                                                                         $tenant.FallbackUsername,
+                                                                         $fallbackPassword,
+                                                                         $tenant.ApplicationId,
+                                                                         $tenant.ClientId,
+                                                                         $clientSecret,
+                                                                         $tenant.CertificateThumbprint,
+                                                                         $certificateSecret,
+                                                                         $tenant.CertificatePfx
 
         Write-Output $connectionString
     }

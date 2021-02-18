@@ -41,7 +41,7 @@ function Connect-MicrosoftOnline
         $Name,
 
         [Parameter(Mandatory = $false)]
-        [ValidateSet('AzureAD', 'MSOL', 'Graph', 'Azure', 'Exchange', 'SecurityCompliance', 'SharePoint', 'Teams')]
+        [ValidateSet('AzureAD', 'MSOL', 'Graph', 'Azure', 'Exchange', 'SecurityCompliance', 'SharePoint', 'Teams', 'SkypeForBusiness')]
         [System.String[]]
         $Scope,
 
@@ -55,7 +55,7 @@ function Connect-MicrosoftOnline
     # Define the default scopes, if non was specified.
     if (-not $PSBoundParameters.ContainsKey('Scope'))
     {
-        $Scope = 'AzureAD', 'Graph', 'Azure', 'Exchange', 'SharePoint', 'Teams'
+        $Scope = 'AzureAD', 'MSOL', 'Graph', 'Azure', 'Exchange', 'SecurityCompliance', 'SharePoint', 'Teams', 'SkypeForBusiness'
     }
 
     Test-MicrosoftOnlineModuleDependency -Scope $Scope -UsePreviewModule:$UsePreviewModule
@@ -65,6 +65,13 @@ function Connect-MicrosoftOnline
     if ($Scope -contains 'SecurityCompliance' -and $Scope -notcontains 'Exchange')
     {
         $Scope += 'Exchange'
+    }
+
+    # Ensure that the Teams scope is used if the SkypeForBusiness is requested.
+    # This depends on the Teams scope.
+    if ($Scope -contains 'SkypeForBusiness' -and $Scope -notcontains 'Teams')
+    {
+        $Scope += 'Teams'
     }
 
     $tenant = Get-MicrosoftOnlineTenant -Name $Name
@@ -77,7 +84,7 @@ function Connect-MicrosoftOnline
         throw "Multiple tenants named $Name found."
     }
 
-    $orderedScopes = 'AzureAD', 'MSOL', 'Graph', 'Azure', 'Exchange', 'SecurityCompliance', 'SharePoint', 'Teams'
+    $orderedScopes = 'AzureAD', 'MSOL', 'Graph', 'Azure', 'Exchange', 'SecurityCompliance', 'SharePoint', 'Teams', 'SkypeForBusiness'
 
     foreach ($currentScope in $orderedScopes)
     {
@@ -108,9 +115,14 @@ function Connect-MicrosoftOnline
                 # Microsoft Azure Active Directory Module for Windows PowerShell (*-Msol*)
                 if ($currentScope -eq 'MSOL')
                 {
-                    # Connect-MsolService
+                    $msolCredential = [System.Management.Automation.PSCredential]::new($tenant.FallbackUsername, $tenant.FallbackPassword)
+                    Connect-MsolService -Credential $msolCredential
 
-                    throw 'The MSOL module is currently not supported. Use this command to connect: Connect-MsolService'
+                    Get-MsolDomain | Where-Object { $_.IsInitial } | ForEach-Object {
+                        $connection.Module = 'MSOnline'
+                        $connection.Tenant = 'n/a'
+                        $connection.Domain = $_.Name
+                    }
                 }
 
                 # Microsoft Graph (*-Mg*)
@@ -152,9 +164,12 @@ function Connect-MicrosoftOnline
                 # Security & Compliance (based on Exchange Online PowerShell V2)
                 if ($currentScope -eq 'SecurityCompliance')
                 {
-                    # Connect-IPPSSession
+                    $ippsCredential = [System.Management.Automation.PSCredential]::new($tenant.FallbackUsername, $tenant.FallbackPassword)
+                    Connect-IPPSSession -Credential $ippsCredential -WarningAction 'SilentlyContinue'
 
-                    throw 'The SecurityCompliance module is currently not supported. Use this command to connect: Connect-IPPSSession'
+                    $connection.Module = 'ExchangeOnlineManagement'
+                    $connection.Tenant = 'n/a'
+                    $connection.Domain = 'n/a'
                 }
 
                 # Microsoft 365 Patterns and Practices PowerShell Cmdlets (*-PnP*)
@@ -184,6 +199,17 @@ function Connect-MicrosoftOnline
                         $connection.Tenant = $_.TenantId.Guid
                         $connection.Domain = $_.TenantDomain
                     }
+                }
+
+                # Microsoft SkypeForBusiness PowerShell
+                if ($currentScope -eq 'SkypeForBusiness')
+                {
+                    $csCredential = [System.Management.Automation.PSCredential]::new($tenant.FallbackUsername, $tenant.FallbackPassword)
+                    Import-PSSession -Session (New-CsOnlineSession -Credential $csCredential) | Out-Null
+
+                    $connection.Module = 'ExchangeOnlineManagement'
+                    $connection.Tenant = 'n/a'
+                    $connection.Domain = 'n/a'
                 }
 
                 Write-Output $connection

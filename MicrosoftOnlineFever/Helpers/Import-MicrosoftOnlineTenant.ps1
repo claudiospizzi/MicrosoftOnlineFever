@@ -29,13 +29,13 @@ function Import-MicrosoftOnlineTenant
     {
         try
         {
-            # For the future, the property _Version can be used if the tenant
-            # schema changes.
             $tenants += [PSCustomObject] @{
                 PSTypeName            = 'MicrosoftOnlineFever.Tenant'
                 Name                  = $object.Name
                 TenantId              = $object.TenantId
                 TenantDomain          = $object.TenantDomain
+                FallbackUsername      = $object.FallbackUsername
+                FallbackPassword      = $object.FallbackPassword | ConvertTo-SecureString
                 ApplicationId         = $object.ApplicationId
                 ClientId              = $object.ClientId
                 ClientSecret          = $object.ClientSecret | ConvertTo-SecureString
