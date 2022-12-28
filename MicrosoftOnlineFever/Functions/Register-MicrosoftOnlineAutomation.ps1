@@ -56,7 +56,7 @@ function Register-MicrosoftOnlineAutomation
         # Directory role used by the Azure AD application.
         [Parameter(Mandatory = $false)]
         [System.String[]]
-        $ApplicationDirectoryRole = @('Global Administrator', 'Exchange Administrator', 'SharePoint Administrator'),
+        $ApplicationDirectoryRole = @('Global Administrator', 'Exchange Administrator', 'SharePoint Administrator', 'Teams Administrator'),
 
         # API permissions for the Azure AD application.
         [Parameter(Mandatory = $false)]
@@ -84,8 +84,6 @@ function Register-MicrosoftOnlineAutomation
 
 
     ## Azure AD Connection
-
-    $context = [PSCustomObject] @{ TenantId = '5f36d76e-9089-4ef3-94fc-d1758088e39a'; TenantDomain = 'arcadespizzilab.onmicrosoft.com' }
 
     if ($PSBoundParameters.ContainsKey('Credential'))
     {
@@ -540,7 +538,7 @@ function Register-MicrosoftOnlineAutomation
     $tenantSplat = @{
         Name                  = $Name
         TenantId              = $context.TenantId
-        TenantDomain          = $context.TenantDomain
+        TenantDomain          = 'muellerelektro6285.onmicrosoft.com' # $context.TenantDomain
         FallbackUsername      = $fallbackUsername
         FallbackPassword      = Protect-String -String $fallbackPassword
         ApplicationId         = $application.AppId

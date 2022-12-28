@@ -36,7 +36,7 @@ function Connect-MicrosoftOnline
     param
     (
         # The tenant name.
-        [Parameter(Mandatory = $true, Position = 0)]
+        [Parameter(Mandatory = $false, Position = 0)]
         [System.String]
         $Name,
 
@@ -51,6 +51,31 @@ function Connect-MicrosoftOnline
         [Switch]
         $UsePreviewModule
     )
+
+    # If no connection was cached, register the tenant name. If a cached
+    # connection was found, check if this matched the requested tenant. If not,
+    # throw an exception.
+    if (-not $PSBoundParameters.ContainsKey('Name'))
+    {
+        if ([System.String]::IsNullOrEmpty($Script:MicrosoftOnlineFeverConnectionName))
+        {
+            Write-Warning 'Not connected to any Microsoft Online tenant.'
+        }
+        else
+        {
+            Get-MicrosoftOnlineTenant -Name $Script:MicrosoftOnlineFeverConnectionName
+        }
+        return
+    }
+
+    if ([System.String]::IsNullOrEmpty($Script:MicrosoftOnlineFeverConnectionName))
+    {
+        $Script:MicrosoftOnlineFeverConnectionName = $Name
+    }
+    elseif ($Script:MicrosoftOnlineFeverConnectionName -ne $Name)
+    {
+        throw "Only one tenant connection per PowerShell session is supported. This session is already connected to $Script:MicrosoftOnlineFeverConnectionName. Use a new PowerShell session for $Name."
+    }
 
     # Define the default scopes, if non was specified.
     if (-not $PSBoundParameters.ContainsKey('Scope'))
@@ -205,9 +230,9 @@ function Connect-MicrosoftOnline
                 if ($currentScope -eq 'SkypeForBusiness')
                 {
                     $csCredential = [System.Management.Automation.PSCredential]::new($tenant.FallbackUsername, $tenant.FallbackPassword)
-                    Import-PSSession -Session (New-CsOnlineSession -Credential $csCredential) | Out-Null
+                    Import-Module (Import-PSSession -Session (New-CsOnlineSession -Credential $csCredential) -AllowClobber) -Global
 
-                    $connection.Module = 'ExchangeOnlineManagement'
+                    $connection.Module = 'MicrosoftTeams'
                     $connection.Tenant = 'n/a'
                     $connection.Domain = 'n/a'
                 }

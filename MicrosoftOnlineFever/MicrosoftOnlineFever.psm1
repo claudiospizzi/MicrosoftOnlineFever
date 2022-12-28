@@ -45,3 +45,6 @@ if (-not (Test-Path -Path $Script:MicrosoftOnlineFeverTenantPath))
 {
     ConvertTo-Json -InputObject @() | Set-Content -Path $Script:MicrosoftOnlineFeverTenantPath -Encoding 'UTF8' -Force
 }
+
+# Get the connection state for the module, only one tenant per session is allowed
+$Script:MicrosoftOnlineFeverConnectionName = ''
